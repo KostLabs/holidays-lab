@@ -1,0 +1,11 @@
+port: 8080
+
+base_path: /api/v1/holidays-bff
+
+externals:
+  - name: holidays_api_service
+    port: 8081
+    url: http://holidays-api-service:8081/api/v1/holidays-api
+  - name: holidays_calculator_service
+    port: 8082
+    url: http://localhost:8082/api/v1/holidays-calculator

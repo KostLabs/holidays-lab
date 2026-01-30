@@ -1,0 +1,11 @@
+port: 8081
+
+base_path: /api/v1/holidays-api
+
+mongodb:
+  uri: mongodb://mongo:27017
+  database: holidays_db
+  collection: holidays
+
+external_api:
+  url: https://xn--riigiphad-v9a.ee/?output=json
