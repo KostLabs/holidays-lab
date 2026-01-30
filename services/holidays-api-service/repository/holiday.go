@@ -8,6 +8,10 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type HolidayRepository interface {
@@ -26,6 +30,17 @@ func NewHolidayRepository(db *mongo.Database, collectionName string) HolidayRepo
 }
 
 func (r *holidayRepository) FindByYear(ctx context.Context, year int) ([]model.Holiday, error) {
+	tracer := otel.Tracer("holidays-api-service/repository")
+	ctx, span := tracer.Start(ctx, "MongoDB FindByYear", trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(
+		semconv.DBSystemMongoDB,
+		attribute.String("db.name", r.collection.Database().Name()),
+		attribute.String("db.operation", "find"),
+		attribute.String("db.mongodb.collection", r.collection.Name()),
+		attribute.Int("db.query.year", year),
+	)
+	defer span.End()
+
 	filter := bson.M{"year": year}
 
 	cursor, err := r.collection.Find(ctx, filter)
@@ -46,6 +61,17 @@ func (r *holidayRepository) SaveMany(ctx context.Context, holidays []model.Holid
 	if len(holidays) == 0 {
 		return nil
 	}
+
+	tracer := otel.Tracer("holidays-api-service/repository")
+	ctx, span := tracer.Start(ctx, "MongoDB SaveManyHolidays", trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(
+		semconv.DBSystemMongoDB,
+		attribute.String("db.name", r.collection.Database().Name()),
+		attribute.String("db.operation", "insertMany"),
+		attribute.String("db.mongodb.collection", r.collection.Name()),
+		attribute.Int("db.mongodb.documents", len(holidays)),
+	)
+	defer span.End()
 
 	// Add creation timestamp
 	now := time.Now()

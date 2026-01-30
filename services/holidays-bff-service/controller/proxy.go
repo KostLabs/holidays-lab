@@ -97,13 +97,14 @@ func (c *HolidaysController) forwardToService(ctx *gin.Context, serviceName stri
 
 	// Forward the request
 	proxyReq := service.ProxyRequest{
-		Method:  ctx.Request.Method,
-		URL:     targetURL,
-		Body:    body,
-		Headers: headers,
+		Method:        ctx.Request.Method,
+		URL:           targetURL,
+		Body:          body,
+		Headers:       headers,
+		TargetService: external.Name,
 	}
 
-	resp, err := c.proxyService.Forward(proxyReq)
+	resp, err := c.proxyService.Forward(ctx.Request.Context(), proxyReq)
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{
 			"error": fmt.Sprintf("failed to forward request: %v", err),

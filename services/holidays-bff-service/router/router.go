@@ -3,9 +3,11 @@ package router
 import (
 	"holidays-bff-service/config"
 	"holidays-bff-service/controller"
+	"holidays-bff-service/middleware"
 	"holidays-bff-service/service"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 type Router struct {
@@ -23,6 +25,10 @@ func NewRouter(cfg *config.Config) *Router {
 func (r *Router) Setup() {
 	proxyService := service.NewProxyService()
 	holidaysController := controller.NewHolidaysController(r.cfg, proxyService)
+
+	// HTTP server tracing
+	r.engine.Use(otelgin.Middleware("holidays-bff-service"))
+	r.engine.Use(middleware.HTTPSemanticConventions())
 
 	r.setupRoutes(holidaysController)
 

@@ -1,0 +1,8 @@
+# Local environment overrides (not committed)
+.env
+
+# Go build artifacts
+bin/
+*.exe
+*.log
+*.out

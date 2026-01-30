@@ -3,8 +3,10 @@ package router
 import (
 	"holidays-calculator-service/config"
 	"holidays-calculator-service/controller"
+	"holidays-calculator-service/middleware"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 type Router struct {
@@ -20,6 +22,10 @@ func NewRouter(cfg *config.Config) *Router {
 }
 
 func (r *Router) Setup(calcController *controller.CalculatorController) {
+	// HTTP server tracing
+	r.engine.Use(otelgin.Middleware("holidays-calculator-service"))
+	r.engine.Use(middleware.HTTPSemanticConventions())
+
 	api := r.engine.Group(r.cfg.BasePath)
 	{
 		// GET /api/v1/holidays-calculator/calculate?date=YYYY-MM-DD&name=holiday_name

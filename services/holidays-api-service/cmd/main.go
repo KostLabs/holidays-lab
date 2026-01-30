@@ -12,12 +12,22 @@ import (
 	"holidays-api-service/repository"
 	"holidays-api-service/router"
 	"holidays-api-service/service"
+	observability "holidays-observability"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.opentelemetry.io/contrib/instrumentation/go.mongodb.org/mongo-driver/mongo/otelmongo"
 )
 
 func main() {
+	// Initialize OpenTelemetry
+	ctx := context.Background()
+	shutdown := observability.InitProvider(ctx, "holidays-api-service")
+	defer func() {
+		if err := shutdown(ctx); err != nil {
+			log.Printf("failed to shutdown OTEL: %v", err)
+		}
+	}()
 	// Load configuration (allow override via CONFIG_PATH)
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
@@ -29,11 +39,14 @@ func main() {
 		log.Fatalf("failed to load config: %v", err)
 	}
 
-	// MongoDB client
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// MongoDB client with OTEL monitoring
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(cfg.MongoDB.URI))
+	clientOpts := options.Client().ApplyURI(cfg.MongoDB.URI)
+	clientOpts.Monitor = otelmongo.NewMonitor()
+
+	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
 		log.Fatalf("failed to connect to MongoDB: %v", err)
 	}

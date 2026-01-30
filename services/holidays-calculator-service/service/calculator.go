@@ -9,6 +9,10 @@ import (
 
 	"holidays-calculator-service/model"
 	"holidays-calculator-service/pkg/holidaysclient"
+
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var ErrHolidayNotFound = errors.New("holiday not found")
@@ -26,6 +30,14 @@ func NewCalculatorService(client *holidaysclient.Client) CalculatorService {
 }
 
 func (s *calculatorService) CalculateDaysUntil(ctx context.Context, fromDate, name string) (*model.CalculateResponse, error) {
+	tracer := otel.Tracer("holidays-calculator-service/service")
+	ctx, span := tracer.Start(ctx, "CalculateDaysUntil", trace.WithSpanKind(trace.SpanKindInternal))
+	span.SetAttributes(
+		attribute.String("holidays.from_date", fromDate),
+		attribute.String("holidays.name", name),
+	)
+	defer span.End()
+
 	parsedFrom, err := time.Parse("2006-01-02", fromDate)
 	if err != nil {
 		return nil, fmt.Errorf("invalid date format: %w", err)
@@ -63,6 +75,13 @@ func (s *calculatorService) CalculateDaysUntil(ctx context.Context, fromDate, na
 }
 
 func (s *calculatorService) findHolidayInYear(ctx context.Context, year int, name string, fromDate time.Time) (*model.Holiday, string, error) {
+	tracer := otel.Tracer("holidays-calculator-service/service")
+	ctx, span := tracer.Start(ctx, "FindHolidayInYear", trace.WithSpanKind(trace.SpanKindInternal))
+	span.SetAttributes(
+		attribute.Int("holidays.year", year),
+	)
+	defer span.End()
+
 	resp, err := s.client.FetchHolidays(ctx, fmt.Sprintf("%d", year))
 	if err != nil {
 		return nil, "", err

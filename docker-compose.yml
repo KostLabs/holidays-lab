@@ -6,30 +6,42 @@ services:
       - "27017:27017"
 
   holidays-api-service:
-    build: ./services/holidays-api-service
+    build:
+      context: .
+      dockerfile: services/holidays-api-service/Dockerfile
     container_name: holidays-api-service
     depends_on:
       - mongo
+    env_file:
+      - .env
     environment:
       - CONFIG_PATH=/app/config/config.docker.yaml
     ports:
       - "8081:8081"
 
   holidays-bff-service:
-    build: ./services/holidays-bff-service
+    build:
+      context: .
+      dockerfile: services/holidays-bff-service/Dockerfile
     container_name: holidays-bff-service
     depends_on:
       - holidays-api-service
+    env_file:
+      - .env
     environment:
       - CONFIG_PATH=/app/config/config.docker.yaml
     ports:
       - "8080:8080"
 
   holidays-calculator-service:
-    build: ./services/holidays-calculator-service
+    build:
+      context: .
+      dockerfile: services/holidays-calculator-service/Dockerfile
     container_name: holidays-calculator-service
     depends_on:
       - holidays-api-service
+    env_file:
+      - .env
     environment:
       - CONFIG_PATH=/app/config/config.docker.yaml
     ports:

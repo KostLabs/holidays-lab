@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -10,9 +11,18 @@ import (
 	"holidays-calculator-service/pkg/holidaysclient"
 	"holidays-calculator-service/router"
 	"holidays-calculator-service/service"
+	observability "holidays-observability"
 )
 
 func main() {
+	// Initialize OpenTelemetry
+	ctx := context.Background()
+	shutdown := observability.InitProvider(ctx, "holidays-calculator-service")
+	defer func() {
+		if err := shutdown(ctx); err != nil {
+			log.Printf("failed to shutdown OTEL: %v", err)
+		}
+	}()
 	// Load configuration (allow override via CONFIG_PATH)
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
