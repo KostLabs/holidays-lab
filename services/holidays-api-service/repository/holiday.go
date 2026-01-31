@@ -14,22 +14,17 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type HolidayRepository interface {
-	FindByYear(ctx context.Context, year int) ([]model.Holiday, error)
-	SaveMany(ctx context.Context, holidays []model.Holiday) error
-}
-
-type holidayRepository struct {
+type HolidayRepository struct {
 	collection *mongo.Collection
 }
 
-func NewHolidayRepository(db *mongo.Database, collectionName string) HolidayRepository {
-	return &holidayRepository{
+func NewHolidayRepository(db *mongo.Database, collectionName string) *HolidayRepository {
+	return &HolidayRepository{
 		collection: db.Collection(collectionName),
 	}
 }
 
-func (r *holidayRepository) FindByYear(ctx context.Context, year int) ([]model.Holiday, error) {
+func (r *HolidayRepository) FindByYear(ctx context.Context, year int) ([]model.Holiday, error) {
 	tracer := otel.Tracer("holidays-api-service/repository")
 	ctx, span := tracer.Start(ctx, "MongoDB FindByYear", trace.WithSpanKind(trace.SpanKindClient))
 	span.SetAttributes(
@@ -57,7 +52,7 @@ func (r *holidayRepository) FindByYear(ctx context.Context, year int) ([]model.H
 	return holidays, nil
 }
 
-func (r *holidayRepository) SaveMany(ctx context.Context, holidays []model.Holiday) error {
+func (r *HolidayRepository) SaveMany(ctx context.Context, holidays []model.Holiday) error {
 	if len(holidays) == 0 {
 		return nil
 	}
@@ -73,7 +68,6 @@ func (r *holidayRepository) SaveMany(ctx context.Context, holidays []model.Holid
 	)
 	defer span.End()
 
-	// Add creation timestamp
 	now := time.Now()
 	documents := make([]interface{}, len(holidays))
 	for i, holiday := range holidays {

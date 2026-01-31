@@ -2,8 +2,7 @@ package model
 
 import "time"
 
-// Holiday represents a holiday record as returned by the external API
-// and stored in MongoDB.
+// Holiday represents a holiday record as returned by the external API and stored in MongoDB.
 type Holiday struct {
 	Date      string    `json:"date" bson:"date"`
 	EndDate   *string   `json:"end_date,omitempty" bson:"end_date,omitempty"`
@@ -12,7 +11,7 @@ type Holiday struct {
 	Kind      string    `json:"kind" bson:"kind"`
 	KindID    string    `json:"kind_id" bson:"kind_id"`
 	Year      int       `json:"year" bson:"year"`
-	CreatedAt time.Time `json:"created_at,omitempty" bson:"created_at,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitzero" bson:"created_at,omitempty"`
 }
 
 // FetchRequest represents query parameters for fetching holidays

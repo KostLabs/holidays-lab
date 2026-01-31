@@ -16,22 +16,6 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type ProxyService interface {
-	Forward(ctx context.Context, req ProxyRequest) (*ProxyResponse, error)
-}
-
-type proxyService struct {
-	client *http.Client
-}
-
-func NewProxyService() ProxyService {
-	return &proxyService{
-		client: &http.Client{
-			Timeout: 30 * time.Second,
-		},
-	}
-}
-
 type ProxyRequest struct {
 	Method        string
 	URL           string
@@ -46,7 +30,17 @@ type ProxyResponse struct {
 	Headers    http.Header
 }
 
-func (s *proxyService) Forward(ctx context.Context, req ProxyRequest) (*ProxyResponse, error) {
+type ProxyService struct {
+	httpClient *http.Client
+}
+
+func NewProxyService() *ProxyService {
+	return &ProxyService{
+		httpClient: &http.Client{Timeout: 30 * time.Second},
+	}
+}
+
+func (s *ProxyService) Forward(ctx context.Context, req ProxyRequest) (*ProxyResponse, error) {
 	tracer := otel.Tracer("holidays-bff-service/proxy")
 
 	var bodyReader io.Reader
@@ -85,7 +79,7 @@ func (s *proxyService) Forward(ctx context.Context, req ProxyRequest) (*ProxyRes
 	// Inject trace context for downstream services.
 	otel.GetTextMapPropagator().Inject(ctx, propagation.HeaderCarrier(httpReq.Header))
 
-	resp, err := s.client.Do(httpReq)
+	resp, err := s.httpClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to forward request: %w", err)
 	}

@@ -17,19 +17,15 @@ import (
 
 var ErrHolidayNotFound = errors.New("holiday not found")
 
-type CalculatorService interface {
-	CalculateDaysUntil(ctx context.Context, fromDate, name string) (*model.CalculateResponse, error)
+type CalculatorService struct {
+	holidayClient *holidaysclient.Client
 }
 
-type calculatorService struct {
-	client *holidaysclient.Client
+func NewCalculatorService(holidayClient *holidaysclient.Client) *CalculatorService {
+	return &CalculatorService{holidayClient: holidayClient}
 }
 
-func NewCalculatorService(client *holidaysclient.Client) CalculatorService {
-	return &calculatorService{client: client}
-}
-
-func (s *calculatorService) CalculateDaysUntil(ctx context.Context, fromDate, name string) (*model.CalculateResponse, error) {
+func (s *CalculatorService) CalculateDaysUntil(ctx context.Context, fromDate, name string) (*model.CalculateResponse, error) {
 	tracer := otel.Tracer("holidays-calculator-service/service")
 	ctx, span := tracer.Start(ctx, "CalculateDaysUntil", trace.WithSpanKind(trace.SpanKindInternal))
 	span.SetAttributes(
@@ -74,24 +70,22 @@ func (s *calculatorService) CalculateDaysUntil(ctx context.Context, fromDate, na
 	}, nil
 }
 
-func (s *calculatorService) findHolidayInYear(ctx context.Context, year int, name string, fromDate time.Time) (*model.Holiday, string, error) {
+func (s *CalculatorService) findHolidayInYear(ctx context.Context, year int, name string, fromDate time.Time) (*model.Holiday, string, error) {
 	tracer := otel.Tracer("holidays-calculator-service/service")
 	ctx, span := tracer.Start(ctx, "FindHolidayInYear", trace.WithSpanKind(trace.SpanKindInternal))
-	span.SetAttributes(
-		attribute.Int("holidays.year", year),
-	)
+	span.SetAttributes(attribute.Int("holidays.year", year))
 	defer span.End()
 
-	resp, err := s.client.FetchHolidays(ctx, fmt.Sprintf("%d", year))
+	response, err := s.holidayClient.FetchHolidays(ctx, fmt.Sprintf("%d", year))
 	if err != nil {
 		return nil, "", err
 	}
 
 	needle := strings.ToLower(strings.TrimSpace(name))
-	var best *model.Holiday
+	var foundHoliday *model.Holiday
 
-	for i := range resp.Holidays {
-		h := &resp.Holidays[i]
+	for i := range response.Holidays {
+		h := &response.Holidays[i]
 		titleLower := strings.ToLower(strings.TrimSpace(h.Title))
 
 		// Match by case-insensitive equality or substring.
@@ -107,20 +101,20 @@ func (s *calculatorService) findHolidayInYear(ctx context.Context, year int, nam
 				continue
 			}
 
-			if best == nil || parsedDate.Before(parseDateMust(best.Date)) {
-				best = h
+			if foundHoliday == nil || parsedDate.Before(parseDate(foundHoliday.Date)) {
+				foundHoliday = h
 			}
 		}
 	}
 
-	if best == nil {
+	if foundHoliday == nil {
 		return nil, "", ErrHolidayNotFound
 	}
 
-	return best, resp.Source, nil
+	return foundHoliday, response.Source, nil
 }
 
-func parseDateMust(dateStr string) time.Time {
-	t, _ := time.Parse("2006-01-02", dateStr)
-	return t
+func parseDate(date string) time.Time {
+	parsedDate, _ := time.Parse("2006-01-02", date)
+	return parsedDate
 }

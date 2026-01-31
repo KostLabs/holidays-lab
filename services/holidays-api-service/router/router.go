@@ -31,10 +31,6 @@ func (r *Router) Setup(holidayController *controller.HolidayController) {
 		// GET /api/v1/holidays-proceeding/fetch?year=XXXX
 		api.GET("/fetch", holidayController.FetchHolidays)
 	}
-
-	r.engine.GET("/health", func(c *gin.Context) {
-		c.JSON(200, gin.H{"status": "healthy"})
-	})
 }
 
 func (r *Router) Engine() *gin.Engine {

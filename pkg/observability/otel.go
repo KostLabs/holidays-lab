@@ -23,13 +23,11 @@ func InitProvider(ctx context.Context, serviceName string) func(context.Context)
 	tracesEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT")
 	protocol := os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL")
 	compression := os.Getenv("OTEL_EXPORTER_OTLP_COMPRESSION")
-	headersEnv := os.Getenv("OTEL_EXPORTER_OTLP_HEADERS")
 	licenseKey := os.Getenv("NEW_RELIC_LICENSE_KEY")
 
 	licenseSet := licenseKey != ""
-	headersSet := headersEnv != ""
 
-	log.Printf("otel: initializing provider for service=%s endpoint=%q tracesEndpoint=%q protocol=%q compression=%q headersEnvSet=%t licenseSet=%t", serviceName, endpoint, tracesEndpoint, protocol, compression, headersSet, licenseSet)
+	log.Printf("otel: initializing provider for service=%s endpoint=%q tracesEndpoint=%q protocol=%q compression=%q licenseSet=%t", serviceName, endpoint, tracesEndpoint, protocol, compression, licenseSet)
 
 	var (
 		exporter *otlptrace.Exporter
@@ -41,10 +39,8 @@ func InitProvider(ctx context.Context, serviceName string) func(context.Context)
 		exporter, err = otlptracehttp.New(ctx, otlptracehttp.WithHeaders(map[string]string{
 			"api-key": licenseKey,
 		}))
-	} else {
-		log.Printf("otel: NEW_RELIC_LICENSE_KEY not set, relying on OTEL_EXPORTER_OTLP_HEADERS (service=%s)", serviceName)
-		exporter, err = otlptracehttp.New(ctx)
 	}
+
 	if err != nil {
 		log.Printf("otel: failed to create OTLP exporter: %v", err)
 		return func(context.Context) error { return nil }

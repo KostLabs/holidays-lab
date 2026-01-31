@@ -28,6 +28,7 @@ func main() {
 			log.Printf("failed to shutdown OTEL: %v", err)
 		}
 	}()
+
 	// Load configuration (allow override via CONFIG_PATH)
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {

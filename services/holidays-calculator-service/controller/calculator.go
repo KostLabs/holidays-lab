@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"net/http"
 
 	"holidays-calculator-service/model"
@@ -9,11 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type CalculatorController struct {
-	service service.CalculatorService
+type ICalculatorService interface {
+	CalculateDaysUntil(ctx context.Context, fromDate, name string) (*model.CalculateResponse, error)
 }
 
-func NewCalculatorController(service service.CalculatorService) *CalculatorController {
+type CalculatorController struct {
+	service ICalculatorService
+}
+
+func NewCalculatorController(service ICalculatorService) *CalculatorController {
 	return &CalculatorController{service: service}
 }
 
@@ -21,17 +26,26 @@ func NewCalculatorController(service service.CalculatorService) *CalculatorContr
 func (c *CalculatorController) Calculate(ctx *gin.Context) {
 	var req model.CalculateRequest
 	if err := ctx.ShouldBindQuery(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid query parameters",
+			"details": err.Error(),
+		})
 		return
 	}
 
 	result, err := c.service.CalculateDaysUntil(ctx.Request.Context(), req.Date, req.Name)
 	if err != nil {
 		if err == service.ErrHolidayNotFound {
-			ctx.JSON(http.StatusNotFound, gin.H{"error": "holiday not found"})
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"error": "holiday not found",
+			})
 			return
 		}
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to calculate days until holiday",
+			"details": err.Error(),
+		})
 		return
 	}
 

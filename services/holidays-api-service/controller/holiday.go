@@ -1,10 +1,10 @@
 package controller
 
 import (
+	"context"
 	"net/http"
 
 	"holidays-api-service/model"
-	"holidays-api-service/service"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel"
@@ -12,11 +12,15 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type HolidayController struct {
-	holidayService service.HolidayService
+type IHolidayService interface {
+	FetchHolidays(ctx context.Context, year string) (*model.HolidaysResponse, error)
 }
 
-func NewHolidayController(holidayService service.HolidayService) *HolidayController {
+type HolidayController struct {
+	holidayService IHolidayService
+}
+
+func NewHolidayController(holidayService IHolidayService) *HolidayController {
 	return &HolidayController{holidayService: holidayService}
 }
 
@@ -30,17 +34,27 @@ func (c *HolidayController) FetchHolidays(ctx *gin.Context) {
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		span.RecordError(err)
 		span.SetAttributes(attribute.String("holidays.year", ctx.Query("year")))
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "invalid query parameters",
+			"details": err.Error(),
+		})
 		return
 	}
+
 	span.SetAttributes(attribute.String("holidays.year", req.Year))
 
 	resp, err := c.holidayService.FetchHolidays(spanCtx, req.Year)
 	if err != nil {
 		span.RecordError(err)
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "failed to fetch holidays",
+			"details": err.Error(),
+		})
 		return
 	}
 
+	span.SetAttributes(attribute.Int("holidays.count", len(resp.Holidays)))
 	ctx.JSON(http.StatusOK, resp)
 }

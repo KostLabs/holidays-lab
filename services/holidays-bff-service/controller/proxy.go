@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,12 +13,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type HolidaysController struct {
-	config       *config.Config
-	proxyService service.ProxyService
+type IProxyService interface {
+	Forward(ctx context.Context, req service.ProxyRequest) (*service.ProxyResponse, error)
 }
 
-func NewHolidaysController(cfg *config.Config, proxyService service.ProxyService) *HolidaysController {
+type HolidaysController struct {
+	config       *config.Config
+	proxyService IProxyService
+}
+
+func NewHolidaysController(cfg *config.Config, proxyService IProxyService) *HolidaysController {
 	return &HolidaysController{
 		config:       cfg,
 		proxyService: proxyService,
@@ -32,7 +37,8 @@ func (c *HolidaysController) GetHolidaysByYear(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error":   "invalid query parameters",
+			"details": err.Error(),
 		})
 		return
 	}
@@ -48,7 +54,8 @@ func (c *HolidaysController) GetHolidaysByDateAndName(ctx *gin.Context) {
 
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error":   "invalid query parameters",
+			"details": err.Error(),
 		})
 		return
 	}
@@ -61,7 +68,8 @@ func (c *HolidaysController) forwardToService(ctx *gin.Context, serviceName stri
 	external, found := c.config.GetExternalByName(serviceName)
 	if !found {
 		ctx.JSON(http.StatusNotFound, gin.H{
-			"error": fmt.Sprintf("service %s not found", serviceName),
+			"error":   "configured upstream service not found",
+			"details": fmt.Sprintf("service %s not found", serviceName),
 		})
 		return
 	}
@@ -81,7 +89,8 @@ func (c *HolidaysController) forwardToService(ctx *gin.Context, serviceName stri
 		body, err = io.ReadAll(ctx.Request.Body)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "failed to read request body",
+				"error":   "failed to read request body",
+				"details": err.Error(),
 			})
 			return
 		}
@@ -107,7 +116,8 @@ func (c *HolidaysController) forwardToService(ctx *gin.Context, serviceName stri
 	resp, err := c.proxyService.Forward(ctx.Request.Context(), proxyReq)
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{
-			"error": fmt.Sprintf("failed to forward request: %v", err),
+			"error":   "failed to forward request to upstream service",
+			"details": err.Error(),
 		})
 		return
 	}

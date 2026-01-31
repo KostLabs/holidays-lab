@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"holidays-api-service/model"
-	"holidays-api-service/repository"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
@@ -18,19 +17,20 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type HolidayService interface {
-	FetchHolidays(ctx context.Context, year string) (*model.HolidaysResponse, error)
+type IHolidayRepository interface {
+	FindByYear(ctx context.Context, year int) ([]model.Holiday, error)
+	SaveMany(ctx context.Context, holidays []model.Holiday) error
 }
 
-type holidayService struct {
-	repo        repository.HolidayRepository
+type HolidayService struct {
+	repository  IHolidayRepository
 	externalURL string
 	httpClient  *http.Client
 }
 
-func NewHolidayService(repo repository.HolidayRepository, externalURL string) HolidayService {
-	return &holidayService{
-		repo:        repo,
+func NewHolidayService(repo IHolidayRepository, externalURL string) *HolidayService {
+	return &HolidayService{
+		repository:  repo,
 		externalURL: externalURL,
 		httpClient: &http.Client{
 			Timeout:   10 * time.Second,
@@ -39,7 +39,7 @@ func NewHolidayService(repo repository.HolidayRepository, externalURL string) Ho
 	}
 }
 
-func (s *holidayService) FetchHolidays(ctx context.Context, yearStr string) (*model.HolidaysResponse, error) {
+func (s *HolidayService) FetchHolidays(ctx context.Context, yearStr string) (*model.HolidaysResponse, error) {
 	tracer := otel.Tracer("holidays-api-service/service")
 	ctx, span := tracer.Start(ctx, "FetchHolidaysPipeline", trace.WithSpanKind(trace.SpanKindInternal))
 	span.SetAttributes(attribute.String("holidays.year", yearStr))
@@ -52,10 +52,10 @@ func (s *holidayService) FetchHolidays(ctx context.Context, yearStr string) (*mo
 
 	// DB-first lookup span
 	dbCtx, dbSpan := tracer.Start(ctx, "FetchHolidays.DBLookup", trace.WithSpanKind(trace.SpanKindInternal))
-	holidays, err := s.repo.FindByYear(dbCtx, year)
+	holidays, err := s.repository.FindByYear(dbCtx, year)
 	dbSpan.End()
 	if err != nil {
-		log.Printf("Error querying database: %v", err)
+		log.Printf("DatabaseError: querying holidays for year %d: %v", year, err)
 	}
 
 	if len(holidays) > 0 {
@@ -80,9 +80,10 @@ func (s *holidayService) FetchHolidays(ctx context.Context, yearStr string) (*mo
 	for _, h := range holidays {
 		parsedDate, err := time.Parse("2006-01-02", h.Date)
 		if err != nil {
-			log.Printf("failed to parse holiday date %q: %v", h.Date, err)
+			log.Printf("ValidationError: failed to parse holiday date %q: %v", h.Date, err)
 			continue
 		}
+
 		if parsedDate.Year() == year {
 			h.Year = year
 			filtered = append(filtered, h)
@@ -99,10 +100,10 @@ func (s *holidayService) FetchHolidays(ctx context.Context, yearStr string) (*mo
 		spanCtx, span := tracer.Start(parentCtx, "AsyncSaveHolidays", trace.WithSpanKind(trace.SpanKindInternal))
 		defer span.End()
 
-		if err := s.repo.SaveMany(spanCtx, holidays); err != nil {
-			log.Printf("Failed to save holidays to database: %v", err)
+		if err := s.repository.SaveMany(spanCtx, holidays); err != nil {
+			log.Printf("DatabaseError: failed to save holidays for year %d: %v", year, err)
 		} else {
-			log.Printf("Successfully saved %d holidays for year %d to database", len(holidays), year)
+			log.Printf("INFO: successfully saved %d holidays for year %d to database", len(holidays), year)
 		}
 	}(bgCtx, holidays, year)
 
@@ -112,7 +113,7 @@ func (s *holidayService) FetchHolidays(ctx context.Context, yearStr string) (*mo
 	}, nil
 }
 
-func (s *holidayService) fetchFromExternalAPI(ctx context.Context, year string) ([]model.Holiday, error) {
+func (s *HolidayService) fetchFromExternalAPI(ctx context.Context, year string) ([]model.Holiday, error) {
 	tracer := otel.Tracer("holidays-api-service/service")
 	ctx, span := tracer.Start(ctx, "FetchFromExternalAPI", trace.WithSpanKind(trace.SpanKindInternal))
 	span.SetAttributes(attribute.String("holidays.external.year", year))
