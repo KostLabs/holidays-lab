@@ -1,0 +1,205 @@
+on:
+  push:
+    branches:
+      - feat/**
+      - fix/**
+      - improv/**
+      - chore/**
+      - refactor/**
+      - bugfix/**
+
+jobs:
+  fmt-vet-api:
+    name: Format & Vet (api)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/holidays-api-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: |
+          go fmt ./...
+          go vet ./...
+
+  test-api:
+    name: Tests (api)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/holidays-api-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: go test -v ./...
+
+  lint-api:
+    name: Lint (api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: services/holidays-api-service
+          version: v2.5.0
+
+  gosec-api:
+    name: Gosec (api)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: securego/gosec@master
+        with:
+          args: ./services/holidays-api-service/...
+
+  go-verifier-api:
+    name: Go Verifier (api)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/holidays-api-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: |
+          go install github.com/KostLabs/go-verifier/cmd/goverifier@latest
+          goverifier ./...
+
+  fmt-vet-bff:
+    name: Format & Vet (bff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/holidays-bff-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: |
+          go fmt ./...
+          go vet ./...
+
+  test-bff:
+    name: Tests (bff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/holidays-bff-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: go test -v ./...
+
+  lint-bff:
+    name: Lint (bff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: services/holidays-bff-service
+          version: v2.5.0
+
+  gosec-bff:
+    name: Gosec (bff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: securego/gosec@master
+        with:
+          args: ./services/holidays-bff-service/...
+
+  go-verifier-bff:
+    name: Go Verifier (bff)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/holidays-bff-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: |
+          go install github.com/KostLabs/go-verifier/cmd/goverifier@latest
+          goverifier ./...
+
+  fmt-vet-calculator:
+    name: Format & Vet (calculator)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/holidays-calculator-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: |
+          go fmt ./...
+          go vet ./...
+
+  test-calculator:
+    name: Tests (calculator)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/holidays-calculator-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: go test -v ./...
+
+  lint-calculator:
+    name: Lint (calculator)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          working-directory: services/holidays-calculator-service
+          version: v2.5.0
+
+  gosec-calculator:
+    name: Gosec (calculator)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: securego/gosec@master
+        with:
+          args: ./services/holidays-calculator-service/...
+
+  go-verifier-calculator:
+    name: Go Verifier (calculator)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/holidays-calculator-service
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: |
+          go install github.com/KostLabs/go-verifier/cmd/goverifier@latest
+          goverifier ./...

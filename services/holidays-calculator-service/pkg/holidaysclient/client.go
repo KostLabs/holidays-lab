@@ -54,8 +54,9 @@ func (c *Client) FetchHolidays(ctx context.Context, year string) (*HolidaysRespo
 	}
 
 	var hr HolidaysResponse
-	if err := json.NewDecoder(resp.Body).Decode(&hr); err != nil {
-		return nil, fmt.Errorf("failed to decode holidays-api-service response: %w", err)
+	decodeErr := json.NewDecoder(resp.Body).Decode(&hr)
+	if decodeErr != nil {
+		return nil, fmt.Errorf("failed to decode holidays-api-service response: %w", decodeErr)
 	}
 
 	return &hr, nil

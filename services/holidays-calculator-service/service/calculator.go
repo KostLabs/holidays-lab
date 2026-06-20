@@ -91,8 +91,8 @@ func (s *CalculatorService) findHolidayInYear(ctx context.Context, year int, nam
 		// Match by case-insensitive equality or substring.
 		if titleLower == needle || strings.Contains(titleLower, needle) {
 			// Parse date to ensure it is on or after fromDate when same year.
-			parsedDate, err := time.Parse("2006-01-02", h.Date)
-			if err != nil {
+			parsedDate, parseErr := time.Parse("2006-01-02", h.Date)
+			if parseErr != nil {
 				continue
 			}
 

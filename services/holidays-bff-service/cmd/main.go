@@ -3,25 +3,25 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"holidays-bff-service/config"
 	"holidays-bff-service/router"
 	observability "holidays-observability"
+
+	"github.com/KostLabs/golog"
 )
 
 func main() {
-	// Initialize OpenTelemetry
 	ctx := context.Background()
 	shutdown := observability.InitProvider(ctx, "holidays-bff-service")
 	defer func() {
-		if err := shutdown(ctx); err != nil {
-			log.Printf("failed to shutdown OTEL: %v", err)
+		shutdownErr := shutdown(ctx)
+		if shutdownErr != nil {
+			golog.Error("failed to shutdown OTEL", map[string]any{"error": shutdownErr.Error()})
 		}
 	}()
 
-	// Load configuration (allow override via CONFIG_PATH)
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
 		configPath = "config/config.yaml"
@@ -29,17 +29,18 @@ func main() {
 
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		golog.Error("failed to load config", map[string]any{"error": err.Error()})
+		os.Exit(1)
 	}
 
-	// Create router
 	r := router.NewRouter(cfg)
 	r.Setup()
 
-	// Start server
 	addr := fmt.Sprintf(":%d", cfg.Port)
-	log.Printf("Starting BFF service on %s", addr)
-	if err := r.Engine().Run(addr); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
+	golog.Info("starting holidays-bff-service", map[string]any{"addr": addr})
+	runErr := r.Engine().Run(addr)
+	if runErr != nil {
+		golog.Error("server failed", map[string]any{"error": runErr.Error()})
+		os.Exit(1)
 	}
 }

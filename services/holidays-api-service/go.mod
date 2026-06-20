@@ -3,6 +3,7 @@ module holidays-api-service
 go 1.25.1
 
 require (
+	github.com/KostLabs/golog v1.0.0
 	github.com/gin-gonic/gin v1.11.0
 	go.mongodb.org/mongo-driver v1.17.8
 	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.52.0
