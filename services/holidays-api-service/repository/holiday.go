@@ -45,8 +45,9 @@ func (r *HolidayRepository) FindByYear(ctx context.Context, year int) ([]model.H
 	defer cursor.Close(ctx)
 
 	var holidays []model.Holiday
-	if err := cursor.All(ctx, &holidays); err != nil {
-		return nil, err
+	allErr := cursor.All(ctx, &holidays)
+	if allErr != nil {
+		return nil, allErr
 	}
 
 	return holidays, nil

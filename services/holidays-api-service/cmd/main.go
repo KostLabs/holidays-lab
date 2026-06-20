@@ -24,8 +24,9 @@ func main() {
 	ctx := context.Background()
 	shutdown := observability.InitProvider(ctx, "holidays-api-service")
 	defer func() {
-		if err := shutdown(ctx); err != nil {
-			golog.Error("failed to shutdown OTEL", map[string]any{"error": err.Error()})
+		shutdownErr := shutdown(ctx)
+		if shutdownErr != nil {
+			golog.Error("failed to shutdown OTEL", map[string]any{"error": shutdownErr.Error()})
 		}
 	}()
 
@@ -69,8 +70,9 @@ func main() {
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	golog.Info("starting holidays-api-service", map[string]any{"addr": addr})
-	if err := r.Engine().Run(addr); err != nil {
-		golog.Error("server failed", map[string]any{"error": err.Error()})
+	runErr := r.Engine().Run(addr)
+	if runErr != nil {
+		golog.Error("server failed", map[string]any{"error": runErr.Error()})
 		os.Exit(1)
 	}
 }

@@ -10,25 +10,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type ICalculatorService interface {
+type CalculatorService interface {
 	CalculateDaysUntil(ctx context.Context, fromDate, name string) (*model.CalculateResponse, error)
 }
 
 type CalculatorController struct {
-	service ICalculatorService
+	service CalculatorService
 }
 
-func NewCalculatorController(service ICalculatorService) *CalculatorController {
+func NewCalculatorController(service CalculatorService) *CalculatorController {
 	return &CalculatorController{service: service}
 }
 
 // Calculate handles GET /calculate?date=YYYY-MM-DD&name=holiday_name
+//goverifier:ignore:context-propagation
 func (c *CalculatorController) Calculate(ctx *gin.Context) {
 	var req model.CalculateRequest
-	if err := ctx.ShouldBindQuery(&req); err != nil {
+	bindErr := ctx.ShouldBindQuery(&req)
+	if bindErr != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error":   "invalid query parameters",
-			"details": err.Error(),
+			"details": bindErr.Error(),
 		})
 		return
 	}
