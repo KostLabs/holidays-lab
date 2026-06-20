@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"holidays-calculator-service/config"
@@ -12,18 +11,19 @@ import (
 	"holidays-calculator-service/router"
 	"holidays-calculator-service/service"
 	observability "holidays-observability"
+
+	"github.com/KostLabs/golog"
 )
 
 func main() {
-	// Initialize OpenTelemetry
 	ctx := context.Background()
 	shutdown := observability.InitProvider(ctx, "holidays-calculator-service")
 	defer func() {
 		if err := shutdown(ctx); err != nil {
-			log.Printf("failed to shutdown OTEL: %v", err)
+			golog.Error("failed to shutdown OTEL", map[string]any{"error": err.Error()})
 		}
 	}()
-	// Load configuration (allow override via CONFIG_PATH)
+
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
 		configPath = "config/config.yaml"
@@ -31,7 +31,8 @@ func main() {
 
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		golog.Error("failed to load config", map[string]any{"error": err.Error()})
+		os.Exit(1)
 	}
 
 	holidaysClient := holidaysclient.NewClient(cfg.HolidaysAPIService.URL)
@@ -41,8 +42,9 @@ func main() {
 	r.Setup(ctrl)
 
 	addr := fmt.Sprintf(":%d", cfg.Port)
-	log.Printf("starting holidays-calculator-service on %s", addr)
+	golog.Info("starting holidays-calculator-service", map[string]any{"addr": addr})
 	if err := r.Engine().Run(addr); err != nil {
-		log.Fatalf("server failed: %v", err)
+		golog.Error("server failed", map[string]any{"error": err.Error()})
+		os.Exit(1)
 	}
 }

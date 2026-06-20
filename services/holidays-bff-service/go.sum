@@ -1,3 +1,5 @@
+github.com/KostLabs/golog v1.0.0 h1:w8k4ZzCWwkck97uJ3W2aeJ9tmXOKQkjYlQkplE5/Upo=
+github.com/KostLabs/golog v1.0.0/go.mod h1:IMlEZJiq4IcBeL6iwfk7LMD4JJSitPr8s9/iSbsHIhE=
 github.com/bytedance/gopkg v0.1.3 h1:TPBSwH8RsouGCBcMBktLt1AymVo2TVsBVCY4b6TnZ/M=
 github.com/bytedance/gopkg v0.1.3/go.mod h1:576VvJ+eJgyCzdjS+c4+77QF3p7ubbtiKARP3TxducM=
 github.com/bytedance/sonic v1.14.2 h1:k1twIoe97C1DtYUo+fZQy865IuHia4PR5RPiuGPPIIE=

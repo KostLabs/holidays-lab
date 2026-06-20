@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"holidays-api-service/model"
 
+	"github.com/KostLabs/golog"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -55,7 +55,7 @@ func (s *HolidayService) FetchHolidays(ctx context.Context, yearStr string) (*mo
 	holidays, err := s.repository.FindByYear(dbCtx, year)
 	dbSpan.End()
 	if err != nil {
-		log.Printf("DatabaseError: querying holidays for year %d: %v", year, err)
+		golog.Error("DatabaseError: querying holidays", map[string]any{"year": year, "error": err.Error()})
 	}
 
 	if len(holidays) > 0 {
@@ -80,7 +80,7 @@ func (s *HolidayService) FetchHolidays(ctx context.Context, yearStr string) (*mo
 	for _, h := range holidays {
 		parsedDate, err := time.Parse("2006-01-02", h.Date)
 		if err != nil {
-			log.Printf("ValidationError: failed to parse holiday date %q: %v", h.Date, err)
+			golog.Error("ValidationError: failed to parse holiday date", map[string]any{"date": h.Date, "error": err.Error()})
 			continue
 		}
 
@@ -101,9 +101,9 @@ func (s *HolidayService) FetchHolidays(ctx context.Context, yearStr string) (*mo
 		defer span.End()
 
 		if err := s.repository.SaveMany(spanCtx, holidays); err != nil {
-			log.Printf("DatabaseError: failed to save holidays for year %d: %v", year, err)
+			golog.Error("DatabaseError: failed to save holidays", map[string]any{"year": year, "error": err.Error()})
 		} else {
-			log.Printf("INFO: successfully saved %d holidays for year %d to database", len(holidays), year)
+			golog.Info("successfully saved holidays to database", map[string]any{"year": year, "count": len(holidays)})
 		}
 	}(bgCtx, holidays, year)
 
