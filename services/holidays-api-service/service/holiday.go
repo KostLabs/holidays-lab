@@ -131,7 +131,7 @@ func (s *HolidayService) fetchFromExternalAPI(ctx context.Context, year string) 
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("external API returned status code: %d", resp.StatusCode)
